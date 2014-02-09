@@ -30,7 +30,7 @@ namespace Threading.Context.UnitTests
 			};
 
 			// Act
-			ThreadPoolExtensions.QueueUserWorkItemWithId(() => RunInBackground(action), 0);
+			ThreadPoolExtensions.QueueUserWorkItem(() => RunInBackground(action));
 
 			var retries = 0;
 			while (retries < 100)
@@ -47,8 +47,6 @@ namespace Threading.Context.UnitTests
 		public void GivenItemIsStoredInContext_WhenItemIsFetchedFromThreadPoolThread_ThenTheResultShouldBeExpectedItem()
 		{
 			// Arrange
-			Console.WriteLine(string.Format("[{0}] Main", Thread.CurrentThread.ManagedThreadId));
-
 			var expectedItem = "Item is stored";
 			string item = null;
 			Action<string> action = (value) =>
@@ -60,10 +58,10 @@ namespace Threading.Context.UnitTests
 			_context.Set(ItemKey, expectedItem);
 
 			// Act
-			ThreadPoolExtensions.QueueUserWorkItemWithId(() => RunInBackground(action), 0);
+			ThreadPoolExtensions.QueueUserWorkItem(() => RunInBackground(action));
 
 			var retries = 0;
-			while (retries < 100)
+			while (retries < 1000)
 			{
 				retries++;
 				Thread.Sleep(10);
@@ -77,11 +75,7 @@ namespace Threading.Context.UnitTests
 		private void RunInBackground(Action<string> action)
 		{
 			var threadContext = new LogicalThreadContext();
-			var logicalId = threadContext.Get<int>("logicalId");
 			var value = threadContext.Get<string>(ItemKey);
-
-			var message = string.Format("[{0:00}] [{1:00}] Action, value: {2}", Thread.CurrentThread.ManagedThreadId, logicalId, value);
-			Console.WriteLine(message);
 
 			action(value);
 		}
