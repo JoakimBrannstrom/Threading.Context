@@ -1,19 +1,69 @@
 ﻿using System;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Moq;
+using Moq.Protected;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace Threading.Context.UnitTests
 {
 	[TestClass]
+	public class LogicalThreadContextTests_WithHttpContextPresent : LogicalThreadContextTests
+	{
+		Mock<LogicalThreadContext> ctx;
+		Dictionary<string, object> _requestCache = new Dictionary<string, object>();
+
+		protected override IThreadContext ThreadContext { get { return ctx.Object; } }
+
+		[TestInitialize]
+		public void Setup()
+		{
+			ctx = new Mock<LogicalThreadContext>();
+			ctx.CallBase = true;
+			ctx
+				.Protected()
+				.Setup<IDictionary>("GetHttpContextItems")
+				.Returns(() => _requestCache);
+		}
+
+		[TestMethod]
+		public void GivenHttpRequestItemsExist_WhenStoringContextItems_ThenRequestItemsShouldBeUsed()
+		{
+			// Arrange
+
+			// Act
+			ThreadContext.Set<string>(ItemKey, Guid.NewGuid().ToString());
+
+			// Assert
+			Assert.AreEqual(1, _requestCache.Count);
+		}
+
+		[TestMethod]
+		public void GivenHttpRequestItemsExist_WhenFetchingContextItems_ThenRequestItemsShouldBeUsed()
+		{
+			// Arrange
+			var expectedValue = Guid.NewGuid().ToString();
+			_requestCache[ItemKey] = expectedValue;
+
+			// Act
+			var result = ThreadContext.Get<string>(ItemKey);
+
+			// Assert
+			Assert.AreEqual(expectedValue, result);
+		}
+	}
+
+	[TestClass]
 	public class LogicalThreadContextTests
 	{
-		const string ItemKey = "Item";
-		static IThreadContext _context { get { return new LogicalThreadContext(); } }
+		protected const string ItemKey = "Item";
+		protected virtual IThreadContext ThreadContext { get { return new LogicalThreadContext(); } }
 
 		[TestCleanup]
 		public void Cleanup()
 		{
-			_context.Remove(ItemKey);
+			ThreadContext.Remove(ItemKey);
 		}
 
 		[TestMethod]
@@ -22,10 +72,10 @@ namespace Threading.Context.UnitTests
 			// Arrange
 
 			// Act
-			var item = _context.Get<string>(ItemKey);
+			var item = ThreadContext.Get<string>(ItemKey);
 
 			// Assert
-			Assert.IsNull(item);
+			Assert.IsNull(item, "Scenario: " + GetType());
 		}
 
 		[TestMethod]
@@ -33,13 +83,13 @@ namespace Threading.Context.UnitTests
 		{
 			// Arrange
 			var expectedItem = "Item is stored";
-			_context.Set<string>(ItemKey, expectedItem);
+			ThreadContext.Set<string>(ItemKey, expectedItem);
 
 			// Act
-			var item = _context.Get<string>(ItemKey);
+			var item = ThreadContext.Get<string>(ItemKey);
 
 			// Assert
-			Assert.AreEqual(expectedItem, item);
+			Assert.AreEqual(expectedItem, item, "Scenario: " + GetType());
 		}
 
 		[TestMethod]
@@ -47,11 +97,13 @@ namespace Threading.Context.UnitTests
 		{
 			// Arrange
 			var expectedItem = "Item is stored";
-			_context.Set<string>(ItemKey, expectedItem);
+			ThreadContext.Set<string>(ItemKey, expectedItem);
 			string item = null;
 			Action<string> state = (string value) => item = value;
 
 			WriteThreadInfo();
+
+			ThreadContext.Synchronize();
 
 			// Act
 			ThreadPool.QueueUserWorkItem(new WaitCallback(RunActionInBackground), state);
@@ -66,7 +118,7 @@ namespace Threading.Context.UnitTests
 			Console.WriteLine("retries: " + retries);
 
 			// Assert
-			Assert.AreEqual(expectedItem, item);
+			Assert.AreEqual(expectedItem, item, "Scenario: " + GetType());
 		}
 
 		static void RunActionInBackground(object state)
@@ -74,7 +126,8 @@ namespace Threading.Context.UnitTests
 			WriteThreadInfo();
 
 			var action = state as Action<string>;
-			var context = _context.Get<string>(ItemKey);
+			var threadContext = new LogicalThreadContext();
+			var context = threadContext.Get<string>(ItemKey);
 			action(context);
 		}
 

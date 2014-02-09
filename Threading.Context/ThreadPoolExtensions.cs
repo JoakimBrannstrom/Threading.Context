@@ -10,12 +10,18 @@ namespace Threading.Context
 	{
 		public static void QueueUserWorkItemWithContext(Action action, string context)
 		{
+			var threadContext = new LogicalThreadContext();
+			threadContext.Synchronize();
+
 			var state = new Tuple<Action, string>(action, context);
 			ThreadPool.QueueUserWorkItem(new WaitCallback(Run), state);
 		}
 
 		public static void QueueUserWorkItemWithId(Action action, int id)
 		{
+			var threadContext = new LogicalThreadContext();
+			threadContext.Synchronize();
+
 			var state = new Tuple<Action, int>(action, id);
 			ThreadPool.QueueUserWorkItem(new WaitCallback(Run), state);
 		}
