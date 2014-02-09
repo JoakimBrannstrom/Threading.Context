@@ -61,7 +61,7 @@ namespace Threading.Context.UnitTests
 			ThreadPoolExtensions.QueueUserWorkItem(() => RunInBackground(action));
 
 			var retries = 0;
-			while (retries < 1000)
+			while (retries < 100)
 			{
 				retries++;
 				Thread.Sleep(10);
