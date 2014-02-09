@@ -15,60 +15,37 @@ namespace Threading.Context
 	public interface IThreadContext
 	{
 		T Get<T>(string key);
-		void Set<T>(string key, T value);
+		void Set(string key, object value);
 		void Remove(string key);
 		void Synchronize();
-	}
-
-	public class BuggyThreadContext : IThreadContext
-	{
-		[ThreadStatic]
-		static Dictionary<string, object> _context;
-
-		private static Dictionary<string, object> Context
-		{
-			get
-			{
-				return (_context = _context ?? new Dictionary<string, object>());
-			}
-		}
-
-		public T Get<T>(string key)
-		{
-			if (!Context.ContainsKey(key))
-				return default(T);
-
-			return (T)Context[key];
-		}
-
-		public void Set<T>(string key, T value)
-		{
-			Context[key] = value;
-		}
-
-		public void Remove(string key)
-		{
-			Context.Remove(key);
-		}
-
-		public void Synchronize()
-		{
-		}
 	}
 
 	public class LogicalThreadContext : IThreadContext
 	{
 		public T Get<T>(string key)
 		{
+			var value = GetValue(key);
+
+			if (value is T)
+				return (T)value;
+
+			if(value != null)
+				throw new InvalidCastException(value.GetType() + " could not be casted to " + typeof(T));
+
+			return (T)value;
+		}
+
+		private object GetValue(string key)
+		{
 			var items = GetHttpContextItems();
 
 			if (items != null)
-				return (T)items[key];
+				return items[key];
 			else
-				return (T)CallContext.LogicalGetData(key);
+				return CallContext.LogicalGetData(key);
 		}
 
-		public void Set<T>(string key, T value)
+		public void Set(string key, object value)
 		{
 			var items = GetHttpContextItems();
 			if(items != null)
@@ -98,6 +75,7 @@ namespace Threading.Context
 			var context = HttpContext.Current;
 			if(context != null)
 				return context.Items;
+
 			return null;
 		}
 	}

@@ -57,7 +57,7 @@ namespace Threading.Context.UnitTests
 					item = value;
 			};
 
-			_context.Set<string>(ItemKey, expectedItem);
+			_context.Set(ItemKey, expectedItem);
 
 			// Act
 			ThreadPoolExtensions.QueueUserWorkItemWithId(() => RunInBackground(action), 0);
@@ -86,6 +86,7 @@ namespace Threading.Context.UnitTests
 			action(value);
 		}
 
+		[Ignore]
 		[TestMethod]
 		public void Fiddeling_With_HostExecutionContextManager()
 		{
@@ -95,7 +96,7 @@ namespace Threading.Context.UnitTests
 			// http://blogs.msdn.com/b/ericlippert/archive/2007/12/04/immutability-in-c-part-two-a-simple-immutable-stack.aspx
 			var manager = new HostExecutionContextManager();
 
-			_context.Set<string>("Item", "whatever");
+			_context.Set("Item", "whatever");
 			var context = manager.Capture();
 		}
 	}

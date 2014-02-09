@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Remoting.Messaging;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
@@ -33,7 +34,7 @@ namespace Threading.Context.UnitTests
 			// Arrange
 
 			// Act
-			ThreadContext.Set<string>(ItemKey, Guid.NewGuid().ToString());
+			ThreadContext.Set(ItemKey, Guid.NewGuid().ToString());
 
 			// Assert
 			Assert.AreEqual(1, _requestCache.Count);
@@ -83,7 +84,7 @@ namespace Threading.Context.UnitTests
 		{
 			// Arrange
 			var expectedItem = "Item is stored";
-			ThreadContext.Set<string>(ItemKey, expectedItem);
+			ThreadContext.Set(ItemKey, expectedItem);
 
 			// Act
 			var item = ThreadContext.Get<string>(ItemKey);
@@ -97,7 +98,7 @@ namespace Threading.Context.UnitTests
 		{
 			// Arrange
 			var expectedItem = "Item is stored";
-			ThreadContext.Set<string>(ItemKey, expectedItem);
+			ThreadContext.Set(ItemKey, expectedItem);
 			string item = null;
 			Action<string> state = (string value) => item = value;
 
@@ -128,6 +129,7 @@ namespace Threading.Context.UnitTests
 			var action = state as Action<string>;
 			var threadContext = new LogicalThreadContext();
 			var context = threadContext.Get<string>(ItemKey);
+
 			action(context);
 		}
 
