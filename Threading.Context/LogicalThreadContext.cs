@@ -17,32 +17,18 @@ namespace Threading.Context
 		T Get<T>(string key);
 		void Set(string key, object value);
 		void Remove(string key);
-		void Synchronize();
 	}
 
 	public class LogicalThreadContext : IThreadContext
 	{
 		public T Get<T>(string key)
 		{
-			var value = GetValue(key);
-
-			if (value is T)
-				return (T)value;
-
-			if(value != null)
-				throw new InvalidCastException(value.GetType() + " could not be casted to " + typeof(T));
-
-			return (T)value;
-		}
-
-		private object GetValue(string key)
-		{
 			var items = GetHttpContextItems();
 
 			if (items != null)
-				return items[key];
-			else
-				return CallContext.LogicalGetData(key);
+				return (T)items[key];
+
+			return (T)CallContext.LogicalGetData(key);
 		}
 
 		public void Set(string key, object value)
@@ -50,24 +36,17 @@ namespace Threading.Context
 			var items = GetHttpContextItems();
 			if(items != null)
 				items[key] = value;
-			else
-				CallContext.LogicalSetData(key, value);
+
+			CallContext.LogicalSetData(key, value);
 		}
 
 		public void Remove(string key)
 		{
-			CallContext.FreeNamedDataSlot(key);
-		}
-
-		public void Synchronize()
-		{
 			var items = GetHttpContextItems();
-			if (items == null)
-				return;
+			if (items != null)
+				items.Remove(key);
 
-			var e = items.GetEnumerator();
-			while(e.MoveNext())
-				CallContext.LogicalSetData((string)e.Key, e.Value);
+			CallContext.FreeNamedDataSlot(key);
 		}
 
 		protected virtual IDictionary GetHttpContextItems()

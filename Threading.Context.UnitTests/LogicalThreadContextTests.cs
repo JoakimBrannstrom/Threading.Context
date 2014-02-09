@@ -104,8 +104,6 @@ namespace Threading.Context.UnitTests
 
 			WriteThreadInfo();
 
-			ThreadContext.Synchronize();
-
 			// Act
 			ThreadPool.QueueUserWorkItem(new WaitCallback(RunActionInBackground), state);
 
